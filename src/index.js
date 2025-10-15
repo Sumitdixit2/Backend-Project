@@ -1,16 +1,20 @@
 import dotenv from "dotenv";
 import connectDB from "./db/index.js";
 import app from "./app.js"
-dotenv.config
+dotenv.config()
 
 const Listen = async() => {
     try {
        await connectDB()
 
-        app.use((err) => {
-            console.log("There seems to be an error: ",err);
-            throw new Error
-        })
+        app.use((err, req, res, next) => {
+  console.error("There seems to be an error:", err.message);
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: err.message,
+  });
+});
 
         app.listen(process.env.PORT || 5000,() => {
             console.log("App listening on Port : ",process.env.PORT);
