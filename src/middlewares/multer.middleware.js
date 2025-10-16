@@ -1,12 +1,20 @@
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// For ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "../public/temp")
+    const uploadPath = path.resolve(__dirname, "../../public/temp"); 
+    // __dirname = src/middlewares → ../../public/temp = project-root/public/temp
+    cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    cb(null, file.originalname)
-  }
-})
+    cb(null, file.originalname);
+  },
+});
 
-export const upload = multer({ storage: storage })
+export const upload = multer({ storage });

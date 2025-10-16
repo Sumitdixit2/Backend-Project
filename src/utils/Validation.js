@@ -37,18 +37,17 @@ import ApiError from "./ApiError.js";
 
 function validateAvatar(avatarLocalPath){
     if(!avatarLocalPath) throw new ApiError(400,"Avatar is required");
-    if(!CoverImageLocalPath) throw new ApiError(400,"Cover Image is required")
 }
 
 
 
 export default function validateUserInput(req) {
 
-const {fullName,username,password,email} = req.body
+const {fullname,username,password,email} = req.body
 const avatarLocalPath = req.files?.avatar[0]?.path
 
   validateAvatar(avatarLocalPath)
-  validateFullName(fullName);
+  validateFullName(fullname);
   validateUsername(username);
   validatePassword(password);
   validateEmail(email);

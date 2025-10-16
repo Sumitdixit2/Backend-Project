@@ -18,8 +18,8 @@ const registerUser = asyncHandler( async(req,res) => {
     // check for user creation
     // response
 
-    const {fullName , email , username , password} = req.body
-    console.log(fullName , email);
+    const {fullname , email , username , password} = req.body
+    console.log(fullname , email);
 
     validateUserInput(req)
 
@@ -32,15 +32,20 @@ const registerUser = asyncHandler( async(req,res) => {
     }
     
 const avatarLocalPath = req.files?.avatar[0]?.path
-const CoverImageLocalPath = req.files?.coverImage[0]?.path
+const CoverImageLocalPath = req.files?.coverImage?.[0]?.path
+
+
+console.log("FILES:", req.files);
+console.log("BODY:", req.body);
+
 
 const avatar = await uploadOnCloudinary(avatarLocalPath)
-const CoverImage = await uploadOnCloudinary(CoverImageLocalPath)
+const coverImage = CoverImageLocalPath? await uploadOnCloudinary(CoverImageLocalPath):null;
 
 if(!avatar) throw new ApiError(400,"Error in uploading the images")
 
 const user = await User.create({
-    fullName,
+    fullname,
     avatar: avatar.url,
     coverImage: coverImage?.url || "",
     email,
@@ -48,14 +53,14 @@ const user = await User.create({
     username: username.toLowerCase()
 })
 
-    const createdUser = User.findById(user._id).select(
+    const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"
     )
 
     if(!createdUser) throw new ApiError(500,"Something went wrong while registering the user")
 
     return res.status(201).json(
-        new ApiResponse(200,createdUser,"User registered sucessfully")
+        new ApiResponse(201,createdUser,"User registered sucessfully")
     )
 
 })
