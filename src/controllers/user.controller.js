@@ -9,6 +9,7 @@ import { User } from "../models/User.model.js";
 import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import  deleteFile  from "../utils/DeleteFile.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -259,6 +260,7 @@ const updateAvatar = asyncHandler(async(req,res) => {
 
   const avatar = await uploadOnCloudinary(filePath)
 
+
   if(!avatar.url) throw new ApiError(400, "Error while uploading the avatar")
 
   const user = await User.findByIdAndUpdate(
@@ -287,6 +289,10 @@ const updateCoverImage = asyncHandler(async(req,res) => {
 
   const avatar = await uploadOnCloudinary(filePath)
 
+  const prev = req.user.coverImage
+
+  await deleteFile(prev)
+
   if(!avatar.url) throw new ApiError(400, "Error while uploading the Cover Image")
 
   const user = await User.findByIdAndUpdate(
@@ -299,6 +305,10 @@ const updateCoverImage = asyncHandler(async(req,res) => {
     },
     {new:true}
   ).select("-password")
+
+  if(!user.coverImage === ""){
+    await deleteFile(user.coverImage)
+  }
 
   return res
   .status(200)
@@ -315,5 +325,6 @@ export {
   refreshAccessToken,
   getCurrentUser,
   updatefullname,
-  updateAvatar
+  updateAvatar,
+  updateCoverImage
 };
