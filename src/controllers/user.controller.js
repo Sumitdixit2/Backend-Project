@@ -10,6 +10,7 @@ import { uploadOnCloudinary } from "../utils/Cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import deleteFile from "../utils/DeleteFile.js";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -322,6 +323,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       $match: {
         username: username?.toLowerCase(),
       },
+    },
+    {
       $lookup: {
         from: "subscriptions",
         localField: "_id",
@@ -379,6 +382,60 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     );
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: mongoose.Types.ObjectId(req.user._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "WatchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullname: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+                {
+                  $addFields: {
+                    owner: {
+                      $first: "$owner",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history Fetched successfully"
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -388,4 +445,6 @@ export {
   updatefullname,
   updateAvatar,
   updateCoverImage,
+  getWatchHistory,
+  getUserChannelProfile,
 };
