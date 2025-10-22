@@ -447,4 +447,5 @@ export {
   updateCoverImage,
   getWatchHistory,
   getUserChannelProfile,
+  changeCurrentPassword,
 };
