@@ -9,6 +9,8 @@ function validateFullName(fullName) {
     throw new ApiError(400, "Fullname must not exceed 50 characters");
   if (!/^[a-zA-Z ]+$/.test(fullName))
     throw new ApiError(400, "Fullname can only contain letters and spaces");
+
+  return 1;
 }
 
 function validateUsername(username) {

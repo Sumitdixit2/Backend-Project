@@ -143,8 +143,8 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     Id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        refreshToken: 1,
       },
     },
     {
@@ -159,7 +159,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .clearCookie("AccessToken", options)
+    .clearCookie("accessToken", options)
     .json(new ApiResponse(200, {}, "User Logged Out"));
 });
 
@@ -192,17 +192,17 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       secure: true,
     };
 
-    const { accessToken, newrefreshToken } =
+    const { AccessToken, RefreshToken: newRefreshToken } =
       await generateAccessAndRefreshTokens(user._id);
 
     return res
       .status(200)
-      .cookie("accessToken", accessToken)
-      .cookie("refreshToken", newrefreshToken)
+      .cookie("accessToken", AccessToken)
+      .cookie("refreshToken", newRefreshToken)
       .json(
         new ApiResponse(
           200,
-          { accessToken, refreshToken: newrefreshToken },
+          { AccessToken, refreshToken: newRefreshToken },
           "Access Token refreshed"
         )
       );
@@ -238,13 +238,19 @@ const getCurrentUser = asyncHandler((req, res) => {
 const updatefullname = asyncHandler(async (req, res) => {
   const { fullname, newFullName } = req.body;
 
-  if (!newFullName)
+  if (!newFullName) {
     throw new ApiError(401, "Enter atleast one input to update");
+  }
+
+  if (fullname === newFullName) {
+    throw new ApiError(401, "Enter a different fullname");
+  }
 
   const user = await User.findById(req.user?._id);
 
-  if (!validateFullName(newFullName))
-    throw new ApiError(401, "Enter a valid Username");
+  if (validateFullName(newFullName) !== 1) {
+    throw new ApiError(401, "Enter a valid Fullname");
+  }
 
   user.fullname = newFullName;
   await user.save({ validateBeforeSave: false });
@@ -282,13 +288,13 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 
   if (!filePath) throw new ApiError(400, "Cover Image file is missing");
 
-  const avatar = await uploadOnCloudinary(filePath);
+  const coverImage = await uploadOnCloudinary(filePath);
 
   const prev = req.user.coverImage;
 
   await deleteFile(prev);
 
-  if (!avatar.url)
+  if (!coverImage.url)
     throw new ApiError(400, "Error while uploading the Cover Image");
 
   const user = await User.findByIdAndUpdate(
@@ -296,15 +302,11 @@ const updateCoverImage = asyncHandler(async (req, res) => {
 
     {
       $set: {
-        avatar: avatar.url,
+        coverImage: coverImage.url,
       },
     },
     { new: true }
   ).select("-password");
-
-  if (!user.coverImage === "") {
-    await deleteFile(user.coverImage);
-  }
 
   return res
     .status(200)
@@ -343,10 +345,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     {
       $addFields: {
         subscribersCount: {
-          $size: "subscribers",
+          $size: "$subscribers",
         },
         channelsSubscribedToCounts: {
-          $size: "subscribedTo",
+          $size: "$subscribedTo",
         },
         isSubscribed: {
           $cond: {
@@ -386,7 +388,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: mongoose.Types.ObjectId(req.user._id),
+        _id: new mongoose.Types.ObjectId(req.user._id),
       },
     },
     {
